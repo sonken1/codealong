@@ -5,6 +5,9 @@ import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
 import matplotlib.pyplot as plt
+from datetime import datetime
+from sklearn.metrics import multilabel_confusion_matrix
+startTime = datetime.now()
 
 ######### 1: Data #########
 # Keras (our "API" towards Tensorflow contains some typical datasets)
@@ -75,7 +78,7 @@ model.compile(loss="categorical_crossentropy", optimizer="adam", metrics=["accur
 
 # Set batch size (number of examples per model-update) and epochs (how many times ALL examples are gone through)
 batch_size = 128
-epochs = 5
+epochs = 15
 
 # Set a validation split-size (how much of the training data to be used for validation)
 validation_split = 0.1
@@ -100,7 +103,7 @@ plt.show()
 
 ######### 3: Test the implementation #########
 # By propagating the Neural network (model) with the Test Input (x_test) and compare result with the Test Target (y_test)
-# we get a "score" on the quality of the network. This can be done with keras 'evaluate' method.
+# we get a "score" on the quality of the network. This can be done with keras' 'evaluate' method.
 score = model.evaluate(x_test, y_test, verbose=0)
 print("Test loss:", score[0])
 print("Test accuracy:", score[1])
@@ -109,7 +112,16 @@ print("Test accuracy:", score[1])
 predictions = model.predict(x_test)
 
 # Display one test image
+plt.figure()
 idx = 1
 plt.imshow(np.squeeze(x_test[idx]))
 plt.title('True Label: {}. Predicted: {}'.format(np.argmax(y_test[idx]), np.argmax(predictions[idx])))
 plt.show()
+
+# Confusion Matrix (for all):
+y_pred = np.argmax(predictions, axis=1)
+y_true = np.argmax(y_test, axis=1)
+multilabel_confusion_matrix(y_true, y_pred, labels=test_classes)
+
+print('Time: ')
+print(datetime.now() - startTime)
