@@ -4,6 +4,7 @@
 import numpy as np
 from tensorflow import keras
 from tensorflow.keras import layers
+from tensorflow.keras.preprocessing.image import load_img
 import matplotlib.pyplot as plt
 from datetime import datetime
 from sklearn.metrics import multilabel_confusion_matrix
@@ -36,6 +37,7 @@ train_classes = np.unique(y_train)
 num_classes = len(test_classes)
 
 # Input shape (for the network) is gathered from input data
+img_size = x_train[0].shape
 input_shape = (x_train[0].shape + (1,))
 
 # Data pre-processing:
@@ -84,8 +86,8 @@ epochs = 15
 validation_split = 0.1
 
 # Fit = train model (according to set parameters)
-training_history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=0.1)
-
+training_history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=validation_split)
+model.save('mnist_cnn.h5')
 # Plot the 'history' object of the history (in order to understand how training went)
 # Loss decrease over the epochs
 plt.figure()
@@ -125,3 +127,10 @@ multilabel_confusion_matrix(y_true, y_pred, labels=test_classes)
 
 print('Time: ')
 print(datetime.now() - startTime)
+
+# Test on separate image (The size of this image makes it very bad)
+path = r"C:\Users\elias\Documents\codealong\presentationmaterial\handwritten-2.jpg"
+img = load_img(path, target_size=img_size, color_mode="grayscale")
+img = np.expand_dims(img, 2)
+img = np.expand_dims(img, 0)
+pred = model.predict(img).argmax()
