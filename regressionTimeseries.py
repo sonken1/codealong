@@ -6,7 +6,6 @@ import numpy as np
 import pandas as pd
 import seaborn as sns
 import tensorflow as tf
-
 from tensorflow import keras
 from tensorflow.keras import layers
 from tensorflow.keras.layers.experimental import preprocessing
@@ -24,19 +23,25 @@ def plot_loss(history):
     plt.show()
 
 ######### 1: Data #########
+# Download the dataset
 url = 'http://archive.ics.uci.edu/ml/machine-learning-databases/auto-mpg/auto-mpg.data'
 
 # Set-up the variables of interest
 column_names = ['MPG', 'Cylinders', 'Displacement', 'Horsepower', 'Weight',
                 'Acceleration', 'Model Year', 'Origin']
 
+# Load the data as a pandas dataframe.
 raw_dataset = pd.read_csv(url, names=column_names,
                           na_values='?', comment='\t',
                           sep=' ', skipinitialspace=True)
 
+# Always copy df:s
 dataset = raw_dataset.copy()
-dataset.tail() # Vizualize data
 
+# Vizualize data (.head() shows the initial five rows and headers)
+dataset.head()
+
+# Cleaning the dataset from NaN
 dataset.isna().sum()
 dataset = dataset.dropna()
 
@@ -50,14 +55,15 @@ train_dataset = dataset.sample(frac=0.8, random_state=0)
 test_dataset = dataset.drop(train_dataset.index)
 
 # Inspect the data
-# Have a quick look at the joint distribution of a few pairs of columns from the training set.
-# Looking at the top row it should be clear that the fuel efficiency (MPG) is a function of all the other parameters. Looking at the other rows it should be clear that they are functions of each other.
+# Plot correlation
 sns.pairplot(train_dataset[['MPG', 'Cylinders', 'Displacement', 'Weight']], diag_kind='kde')
 
-train_dataset.describe().transpose()
+# Visualize differences
+charac = train_dataset.describe().transpose()
 
 # Split features from labels
-# Separate the target value, the "label", from the features. This label is the value that you will train the model to predict.
+# Separate the target value, the "label", from the features.
+# This label is the value that you will train the model to predict.
 train_features = train_dataset.copy()
 test_features = test_dataset.copy()
 
@@ -66,37 +72,54 @@ test_labels = test_features.pop('MPG')
 
 # Normalization
 # In the table of statistics it's easy to see how different the ranges of each feature are.
-train_dataset.describe().transpose()[['mean', 'std']] # Visualize
+print(charac[['mean', 'std']])
 
 # The Normalization layer
 # The preprocessing.Normalization layer is a clean and simple way to build that preprocessing into your model.
 # The first step is to create the layer:
-
 normalizer = preprocessing.Normalization()
 normalizer.adapt(np.array(train_features))
 # This calculates the mean and variance, and stores them in the layer.
 print(normalizer.mean.numpy())
 
-
-# 2
+######### 2: Construct a Neural Network #########
+# Setup a "simple" Fully-Connected Neural Network (typically used for 'static data', i.e. non-dynamic/time-dependent)
+# Keras Sequential Class (for 'simple' networks) rather than Keras Functional (used for more complex architectures)
 model = keras.Sequential()
 model.add(normalizer)
 model.add(layers.Dense(64, activation='relu'))
 model.add(layers.Dense(64, activation='relu'))
 model.add(layers.Dense(1))
 
-model.compile(loss='mean_absolute_error', optimizer=tf.keras.optimizers.Adam(0.001))
 model.summary()
+
+# "Compile" model (prepare for training)
+model.compile(loss='mean_absolute_error', optimizer=tf.keras.optimizers.Adam(0.001), metrics='mean_absolute_error')
+# loss = function to optimize against ('objective' - what)
+# optimizer = optimization algorithm (how)
+# metrics = value to monitor ('when are we good?')
+
+# In previous example, we had a batch size set, however as we have fewer data points for this example, we handle all
+# training examples as one batch
+epochs = 100
+
+# Set a validation split-size (how much of the training data to be used for validation)
+validation_split = 0.2
 
 history = model.fit(
     train_features, train_labels,
-    validation_split=0.2,
-    epochs=100)
+    validation_split=validation_split,
+    epochs=epochs)
+
+# Save the model (so we do not need to train again)
 model.save('fuel_regression.h5')
+
 plot_loss(history)
 
-# 3
-test_results = model.evaluate(test_features, test_labels, verbose=0)
+######### 3: Test the implementation #########
+# By propagating the Neural network (model) with the Test Input (test_features) and compare result with the Test Target (test_labels)
+# we get a "score" on the quality of the network. This can be done with keras' 'evaluate' method.
+score = model.evaluate(test_features, test_labels, verbose=0)
 test_predictions = model.predict(test_features).flatten()
 
 plt.figure()

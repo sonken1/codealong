@@ -86,8 +86,15 @@ epochs = 15
 validation_split = 0.1
 
 # Fit = train model (according to set parameters)
-training_history = model.fit(x_train, y_train, batch_size=batch_size, epochs=epochs, validation_split=validation_split)
+training_history = model.fit(
+    x_train, y_train,
+    batch_size=batch_size,
+    epochs=epochs,
+    validation_split=validation_split)
+
+# Save the model (so we do not need to train again)
 model.save('mnist_cnn.h5')
+
 # Plot the 'history' object of the history (in order to understand how training went)
 # Loss decrease over the epochs
 plt.figure()
